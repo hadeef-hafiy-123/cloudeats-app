@@ -1,0 +1,15 @@
+{
+  "name": "order-service",
+  "version": "1.0.0",
+  "description": "Shopping cart and order management service",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "redis": "^5.9.0",
+    "mongodb": "^6.18.0",
+    "cors": "^2.8.5"
+  }
+}

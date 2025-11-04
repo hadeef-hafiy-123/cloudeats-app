@@ -1,5 +1,9 @@
 services:
-  # Database Service
+  # ============================================
+  # DATABASES (Shared Infrastructure)
+  # ============================================
+  
+  # MySQL Database
   db:
     image: mysql:8.0
     container_name: cloudeats-db
@@ -20,22 +24,108 @@ services:
       timeout: 20s
       retries: 10
 
-  # Backend API Service
-  api:
-    build: ./backend
-    container_name: cloudeats-api
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cloudeats-redis
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "6379:6379"
+    networks:
+      - cloudeats-network
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: cloudeats-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cloudeats-network
+
+  # ============================================
+  # MICROSERVICES
+  # ============================================
+
+  # User Microservice (Port 3001)
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=db
+      - DB_USER=cloudeats_user
+      - DB_PASSWORD=cloudeats_password
+      - DB_NAME=cloudeats_db
+      - PORT=3001
     depends_on:
       db:
         condition: service_healthy
     networks:
       - cloudeats-network
-    environment:
-      - NODE_ENV=development
+    labels:
+      - "service.name=user-service"
+      - "service.description=Authentication and user profiles"
 
-  # Frontend Web Service
+  # Menu Microservice (Port 3002)
+  menu-service:
+    build: ./services/menu-service
+    container_name: menu-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - DB_HOST=db
+      - DB_USER=cloudeats_user
+      - DB_PASSWORD=cloudeats_password
+      - DB_NAME=cloudeats_db
+      - PORT=3002
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cloudeats-network
+    labels:
+      - "service.name=menu-service"
+      - "service.description=Menu items and catalog"
+
+  # Order Microservice (Port 3003)
+  order-service:
+    build: ./services/order-service
+    container_name: order-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      - REDIS_HOST=redis
+      - MONGO_HOST=mongodb
+      - MONGO_USER=admin
+      - MONGO_PASSWORD=admin_password
+      - PORT=3003
+    depends_on:
+      - redis
+      - mongodb
+    networks:
+      - cloudeats-network
+    labels:
+      - "service.name=order-service"
+      - "service.description=Shopping cart and orders"
+
+  # ============================================
+  # FRONTEND
+  # ============================================
+  
   web:
     build: ./frontend
     container_name: cloudeats-web
@@ -43,15 +133,27 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - api
+      - user-service
+      - menu-service
+      - order-service
     networks:
       - cloudeats-network
 
-# Networks
+# ============================================
+# NETWORKS
+# ============================================
 networks:
   cloudeats-network:
     driver: bridge
+    name: cloudeats-network
 
-# Volumes
+# ============================================
+# VOLUMES
+# ============================================
 volumes:
   db_data:
+    name: cloudeats-db-data
+  redis_data:
+    name: cloudeats-redis-data
+  mongo_data:
+    name: cloudeats-mongo-data
