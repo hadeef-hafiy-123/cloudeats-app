@@ -17,14 +17,16 @@ const db = mysql.createConnection({
   database: process.env.DB_NAME || 'cloudeats_db'
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to database:', err);
-    return;
-  }
-  console.log('✅ Menu Service: Connected to MySQL database');
-  initializeDatabase();
-});
+if (process.env.NODE_ENV !== 'test') {
+  db.connect((err) => {
+    if (err) {
+      console.error('Error connecting to database:', err);
+      return;
+    }
+    console.log('✅ Menu Service: Connected to MySQL database');
+    initializeDatabase();
+  });
+}
 
 // ============================================
 // DATABASE INITIALIZATION
@@ -210,7 +212,15 @@ app.get('/api/menu/:id', (req, res) => {
 // ============================================
 // START SERVER
 // ============================================
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Menu Service running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Menu Service running on port ${PORT}`);
+    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  });
+}
+
+// ========== EXPORT FOR TESTING ==========
+// Only export when running tests (not in production)
+module.exports = {
+  validateRating
+};
