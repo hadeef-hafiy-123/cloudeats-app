@@ -173,6 +173,9 @@ app.get('/api/menu/:id', (req, res) => {
 // START SERVER
 // ============================================
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('🚀 Menu Service running on port ${PORT}');
-  console.log('📍 Health check: http://localhost:${PORT}/health');
+  console.log(`🚀 Menu Service running on port ${PORT}`);
+  console.log(`📍 Health check: http://localhost:${PORT}/health`);
 });
+
+module.exports = { validateRating, app, db };
+
