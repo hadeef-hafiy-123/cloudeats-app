@@ -1,0 +1,42 @@
+name: Run Automated Tests
+
+# When to run tests
+on:
+  push:
+    branches: [ main, feature/** ]
+  pull_request:
+    branches: [ main ]
+
+# What to do
+jobs:
+  test-menu-service:
+    name: Test Menu Service
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Get the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        working-directory: ./services/menu-service
+        run: npm install
+      
+      # Step 4: Run tests
+      - name: Run tests
+        working-directory: ./services/menu-service
+        env:
+          NODE_ENV: test
+        run: npm test
+      
+      # Step 5: Show results
+      - name: Test results
+        if: always()
+        run: echo "Tests completed!"

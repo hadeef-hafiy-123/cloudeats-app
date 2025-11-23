@@ -1,12 +1,13 @@
+
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3002;
-
+ 
 app.use(cors());
 app.use(express.json());
-
+ 
 // ============================================
 // DATABASE CONNECTION (MySQL only)
 // ============================================
@@ -16,18 +17,16 @@ const db = mysql.createConnection({
   password: process.env.DB_PASSWORD || 'cloudeats_password',
   database: process.env.DB_NAME || 'cloudeats_db'
 });
-
-if (process.env.NODE_ENV !== 'test') {
-  db.connect((err) => {
-    if (err) {
-      console.error('Error connecting to database:', err);
-      return;
-    }
-    console.log('✅ Menu Service: Connected to MySQL database');
-    initializeDatabase();
-  });
-}
-
+ 
+db.connect((err) => {
+  if (err) {
+    console.error('Error connecting to database:', err);
+    return;
+  }
+  console.log('✅ Menu Service: Connected to MySQL database');
+  initializeDatabase();
+});
+ 
 // ============================================
 // DATABASE INITIALIZATION
 // ============================================
@@ -43,14 +42,12 @@ function initializeDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
-  
   db.query(createTableQuery, (err) => {
     if (err) {
       console.error('Error creating table:', err);
       return;
     }
     console.log('✅ Menu items table ready');
-    
     // Check if we need sample data
     db.query('SELECT COUNT(*) as count FROM menu_items', (err, results) => {
       if (err) return;
@@ -60,7 +57,7 @@ function initializeDatabase() {
     });
   });
 }
-
+ 
 function insertSampleData() {
   const sampleItems = [
     ['Nasi Lemak Special', 'Breakfast', 12.00, 'Fragrant coconut rice with sambal, anchovies, peanuts, boiled egg, and crispy chicken', 'popular'],
@@ -74,9 +71,7 @@ function insertSampleData() {
     ['Milo Ais', 'Beverage', 4.00, 'Iced chocolate malt drink', null],
     ['Air Sirap', 'Beverage', 2.50, 'Sweet rose syrup drink', null]
   ];
-  
   const insertQuery = 'INSERT INTO menu_items (name, category, price, description, badge) VALUES ?';
-  
   db.query(insertQuery, [sampleItems], (err) => {
     if (err) {
       console.error('Error inserting sample data:', err);
@@ -85,74 +80,7 @@ function insertSampleData() {
     console.log('✅ Sample menu items inserted');
   });
 }
-
-// ========== VALIDATION FUNCTIONS ==========
-
-/**
- * Validate rating value
- * @param {number} rating - Rating value (1-5)
- * @returns {object} - { valid: boolean, error: string }
- */
-function validateRating(rating) {
-  // Check if rating exists
-  if (rating === undefined || rating === null) {
-    return { valid: false, error: 'Rating is required' };
-  }
-  
-  // Convert to number
-  const ratingNum = Number(rating);
-  
-  // Check if valid number
-  if (isNaN(ratingNum)) {
-    return { valid: false, error: 'Rating must be a number' };
-  }
-  
-  // Check range
-  if (ratingNum < 1 || ratingNum > 5) {
-    return { valid: false, error: 'Rating must be between 1 and 5' };
-  }
-  
-  // Check if integer
-  if (!Number.isInteger(ratingNum)) {
-    return { valid: false, error: 'Rating must be a whole number' };
-  }
-  
-  return { valid: true };
-}
-
-// ========== END VALIDATION FUNCTIONS ==========
-
-// ========== RATING ROUTES ==========
-
-/**
- * POST /api/ratings - Add new restaurant rating
- * Body: { userId, restaurantName, rating, comment }
- */
-app.post('/api/ratings', (req, res) => {
-  const { userId, restaurantName, rating, comment } = req.body;
-  
-  // Validate rating using our function
-  const validation = validateRating(rating);
-  if (!validation.valid) {
-    return res.status(400).json({ error: validation.error });
-  }
-  
-  // TODO: Save to database (Lab 6.1)
-  // For now, just return success
-  res.json({
-    message: 'Rating added successfully',
-    data: {
-      userId,
-      restaurantName,
-      rating,
-      comment,
-      timestamp: new Date()
-    }
-  });
-});
-
-// ========== END RATING ROUTES ==========
-
+ 
 // ============================================
 // HEALTH CHECK
 // ============================================
@@ -163,11 +91,43 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
+ 
+// ========== VALIDATION FUNCTIONS ==========
+ 
+/**
+* Validate rating value
+* @param {number} rating - Rating value (1-5)
+* @returns {object} - { valid: boolean, error: string }
+*/
+function validateRating(rating) {
+  // Check if rating exists
+  if (rating === undefined || rating === null) {
+    return { valid: false, error: 'Rating is required' };
+  }
+  // Convert to number
+  const ratingNum = Number(rating);
+  // Check if valid number
+  if (isNaN(ratingNum)) {
+    return { valid: false, error: 'Rating must be a number' };
+  }
+  // Check range
+  if (ratingNum < 1 || ratingNum > 5) {
+    return { valid: false, error: 'Rating must be between 1 and 5' };
+  }
+  // Check if integer
+  if (!Number.isInteger(ratingNum)) {
+    return { valid: false, error: 'Rating must be a whole number' };
+  }
+  return { valid: true };
+}
+ 
+// ========== END VALIDATION FUNCTIONS ==========
+ 
+ 
 // ============================================
 // MENU ROUTES
 // ============================================
-
+ 
 // --- Get all menu items ---
 // [COPY from your monolith: app.get('/api/menu', ...)]
 app.get('/api/menu', (req, res) => {
@@ -179,7 +139,7 @@ app.get('/api/menu', (req, res) => {
     res.json(results);
   });
 });
-
+ 
 // --- Get menu items by category ---
 // [COPY from your monolith: app.get('/api/menu/category/:category', ...)]
 app.get('/api/menu/category/:category', (req, res) => {
@@ -192,7 +152,7 @@ app.get('/api/menu/category/:category', (req, res) => {
     res.json(results);
   });
 });
-
+ 
 // --- Get single menu item ---
 // [COPY from your monolith: app.get('/api/menu/:id', ...)]
 app.get('/api/menu/:id', (req, res) => {
@@ -208,19 +168,11 @@ app.get('/api/menu/:id', (req, res) => {
     res.json(results[0]);
   });
 });
-
+ 
 // ============================================
 // START SERVER
 // ============================================
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Menu Service running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  });
-}
-
-// ========== EXPORT FOR TESTING ==========
-// Only export when running tests (not in production)
-module.exports = {
-  validateRating
-};
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('🚀 Menu Service running on port ${PORT}');
+  console.log('📍 Health check: http://localhost:${PORT}/health');
+});
